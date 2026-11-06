@@ -13,6 +13,17 @@ import { asyncDelay } from "./utils/delay";
 const TZ = "Asia/Kolkata";
 const MIN = 60_000;
 
+// A crash during browser startup (flaky ChromeDriver, a low-memory VM, a stale profile
+// lock) can surface as an unhandled rejection, which by default kills the whole Node
+// process - silently losing that day's remaining scheduled run and logging only a raw
+// stack trace instead of our normal ❌ FAILED line. Log it and keep the service alive.
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled rejection (process kept alive):", reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught exception (process kept alive):", error);
+});
+
 // Cron fires at the START of the window; a random delay spreads it across the window.
 const JOBS = {
   in: { cron: "20 9 * * 1-5", windowMin: 10, label: "Clock-In 🕘", run: handleClockIn }, // 09:20-09:30
